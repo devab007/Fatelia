@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../core/theme/app_colors.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../services/tts_service.dart';
 
 class AiVoiceScreen extends StatefulWidget {
@@ -52,12 +51,14 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
   @override
   void dispose() {
     _pulseController.dispose();
+    TtsService.stop(); // Interrompt toute lecture vocale à la fermeture de l'écran
     super.dispose();
   }
 
   void _toggleListening([String? customQuery]) {
     if (_isListening && customQuery == null) {
-      // Arrêt de l'écoute
+      // Arrêt de l'écoute et du son
+      TtsService.stop();
       _pulseController.stop();
       _pulseController.reset();
       setState(() {
@@ -66,13 +67,14 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
       });
     } else {
       // Démarrage de l'écoute
+      TtsService.stop(); // Stoppe un éventuel audio précédent
       _pulseController.repeat(reverse: true);
       setState(() {
         _isListening = true;
         _statusText = customQuery != null ? 'Traitement en cours...' : 'Fatelia vous écoute...';
       });
 
-      // Simulation du traitement de la requête vocale
+      // Traitement de la requête vocale
       final query = customQuery ?? 'Quand prendre mon comprimé ?';
 
       Future.delayed(Duration(seconds: customQuery != null ? 1 : 3), () {
@@ -80,24 +82,29 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
 
         setState(() {
           _chatLogs.add({'isUser': true, 'text': query});
-          _statusText = 'Fatelia réponds...';
+          _statusText = 'Fatelia répond...';
         });
 
-        // Simulation de la réponse de l'IA
+        // Génération de la réponse et déclenchement vocal
         Future.delayed(const Duration(seconds: 1, milliseconds: 500), () {
           if (!mounted) return;
 
           _pulseController.stop();
           _pulseController.reset();
 
+          final response = _generateMockResponse(query);
+
           setState(() {
             _isListening = false;
             _statusText = 'Appuyez pour parler';
             _chatLogs.add({
               'isUser': false,
-              'text': _generateMockResponse(query),
+              'text': response,
             });
           });
+
+          // 🔊 Déclenchement de la voix
+          TtsService.speak(response);
         });
       });
     }
@@ -121,9 +128,9 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Column(
+        title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'Fatel IA',
               style: TextStyle(
@@ -214,12 +221,12 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [                    // <-- pas de const ici
+                    const Row(
+                      children: [
                         _CapabilityChip(icon: LucideIcons.pill, label: 'Médicaments'),
-                        const SizedBox(width: 8),    // les enfants individuels peuvent rester const
+                        SizedBox(width: 8),
                         _CapabilityChip(icon: LucideIcons.syringe, label: 'Vaccins'),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         _CapabilityChip(icon: LucideIcons.calendarClock, label: 'RDV'),
                       ],
                     ),
@@ -239,7 +246,7 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
               ),
               const SizedBox(height: 32),
 
-              // Mic Ring (Animated Button)
+              // Mic Ring (Bouton animé)
               GestureDetector(
                 onTap: () => _toggleListening(),
                 child: AnimatedBuilder(
@@ -370,6 +377,7 @@ class _AiVoiceScreenState extends State<AiVoiceScreen>
     );
   }
 }
+
 /// Widget interne pour afficher les badges sous l'en-tête
 class _CapabilityChip extends StatelessWidget {
   final IconData icon;
