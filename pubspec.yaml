@@ -37,6 +37,7 @@ dependencies:
   permission_handler: ^11.3.1
   record: 5.1.2 # Fixe la version exacte pour éviter le bug de compilation
   path_provider: ^2.1.2
+  shared_preferences: ^2.2.2
 
 dependency_overrides:
   record_platform_interface: ^1.2.0
