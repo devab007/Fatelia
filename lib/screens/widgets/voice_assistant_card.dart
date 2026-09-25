@@ -264,6 +264,16 @@ import '../../core/theme/app_colors.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../services/audio_service.dart';
 import '../../services/api_service.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+
+final FlutterTts flutterTts = FlutterTts();
+
+Future<void> speakResponse(String text) async {
+  await flutterTts.setLanguage("fr-FR"); // Ou la langue configurée
+  await flutterTts.setPitch(1.0);
+  await flutterTts.setSpeechRate(0.5); // Vitesse normale
+  await flutterTts.speak(text);
+}
 
 class VoiceAssistantCard extends StatefulWidget {
   final Function(String transcription, String responseText)? onResponseReceived;

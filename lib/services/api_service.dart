@@ -1,52 +1,23 @@
-/*import 'dart:convert';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-
-class ApiService {
-  // Remplace par ton IP locale (ex: http://192.168.1.X:8000) pour tester sur téléphone
-  static const String baseUrl = 'http://10.0.2.2:8000'; // 10.0.2.2 pour l'émulateur Android
-
-  // Envoyer l'audio pour transcription ASR
-  static Future<Map<String, dynamic>> sendAudioToASR(String audioFilePath, String language) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/transcribe');
-      final request = http.MultipartRequest('POST', uri);
-
-      request.fields['language'] = language;
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          audioFilePath,
-        ),
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        return {
-          'success': false,
-          'error': 'Erreur serveur: ${response.statusCode}',
-        };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'error': 'Impossible de se connecter au serveur : $e',
-      };
-    }
-  }
-}*/
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_tts/flutter_tts.dart';
+import '../services/tts_service.dart';
+
+// Instanciation du moteur TTS
+final FlutterTts _flutterTts = FlutterTts();
+
+// Déclaration de la fonction de lecture vocale
+Future<void> _speakResponse(String text) async {
+  await _flutterTts.setLanguage("fr-FR");
+  await _flutterTts.setPitch(1.0);
+  await _flutterTts.setSpeechRate(0.45); // Vitesse adaptée pour être bien audible
+  await _flutterTts.speak(text);
+}
 
 class ApiService {
   // Remplace par ton IP locale (ex: http://192.168.1.X:8000) pour tester sur téléphone
-  static const String baseUrl = 'http://192.168.1.101:8000'; // 10.0.2.2 pour l'émulateur Android
+  static const String baseUrl = 'http://127.0.0.1:8000'; // 10.0.2.2 pour l'émulateur Android
 
   // ==========================================================
   // Authentification
@@ -137,8 +108,20 @@ class ApiService {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      print('=================== REPONSE SERVEUR ===================');
+      print('Status Code: ${response.statusCode}');
+      print('Body: ${response.body}');
+      print('======================================================');
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+
+        // Récupération de la réponse texte
+        final String responseText = data['response_text'] ?? '';
+
+        TtsService.speak(responseText);
+
+        return data;
       } else {
         return {
           'success': false,
